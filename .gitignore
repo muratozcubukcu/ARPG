@@ -1,0 +1,33 @@
+# Build artifacts
+build/
+*.exe
+*.o
+*.obj
+*.dll
+*.so
+*.dylib
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Compiled binaries
+rpg_game.exe
+GachaGame.exe
