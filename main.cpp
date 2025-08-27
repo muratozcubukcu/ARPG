@@ -185,6 +185,21 @@ int main() {
         std::cout << std::endl;
     }
     
+    std::cout << "\n=== Testing Inventory System ===" << std::endl;
+    
+    // Create some items and add them to player's inventory
+    Item healthPotion = Item::createPotion("Health Potion", 100, 0);
+    Item manaPotion = Item::createPotion("Mana Potion", 0, 50);
+    Item ironSword = Item::createSword("Iron Sword", ItemRarity::COMMON);
+    
+    std::cout << "Adding items to player inventory..." << std::endl;
+    player->addItemToInventory(healthPotion);
+    player->addItemToInventory(manaPotion);
+    player->addItemToInventory(ironSword);
+    
+    std::cout << "Player inventory:" << std::endl;
+    player->getInventory().print();
+    
     std::cout << "\n=== Game Complete ===" << std::endl;
     return 0;
 }

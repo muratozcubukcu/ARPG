@@ -5,19 +5,19 @@ StatBlock::StatBlock(stattype strength, stattype dexterity, stattype intelligenc
                      welltype health, welltype mana, leveltype level, exptype exp)
     : strength(strength), dexterity(dexterity), intelligence(intelligence),
       health(health), mana(mana), level(level), exp(exp), maxHealth(health), maxMana(mana),
-      movementSpeed(1.0f), attackSpeed(1.0f), damageMultiplier(1.0f) {
+      movementSpeed(1.0f), attackSpeed(1.0f), damageMultiplier(1.0f), armor(0), baseDamage(0) {
 }
 
 StatBlock::StatBlock(stattype strength, stattype dexterity, stattype intelligence, 
                      welltype maxHealth, welltype maxMana)
     : strength(strength), dexterity(dexterity), intelligence(intelligence),
       health(maxHealth), mana(maxMana), level(1), exp(0), maxHealth(maxHealth), maxMana(maxMana),
-      movementSpeed(1.0f), attackSpeed(1.0f), damageMultiplier(1.0f) {
+      movementSpeed(1.0f), attackSpeed(1.0f), damageMultiplier(1.0f), armor(0), baseDamage(0) {
 }
 
 StatBlock::StatBlock() : strength(10), dexterity(10), intelligence(10),
                          health(50), mana(25), level(1), exp(0), maxHealth(50), maxMana(25),
-                         movementSpeed(1.0f), attackSpeed(1.0f), damageMultiplier(1.0f) {
+                         movementSpeed(1.0f), attackSpeed(1.0f), damageMultiplier(1.0f), armor(0), baseDamage(0) {
 }
 
 // Getter implementations
@@ -36,6 +36,10 @@ float StatBlock::getMovementSpeed() const { return movementSpeed; }
 float StatBlock::getAttackSpeed() const { return attackSpeed; }
 float StatBlock::getDamageMultiplier() const { return damageMultiplier; }
 
+// Combat stat getters
+stattype StatBlock::getArmor() const { return armor; }
+stattype StatBlock::getBaseDamage() const { return baseDamage; }
+
 // Setter implementations
 void StatBlock::setStrength(stattype strength) { this->strength = strength; }
 void StatBlock::setDexterity(stattype dexterity) { this->dexterity = dexterity; }
@@ -51,6 +55,10 @@ void StatBlock::setMaxMana(welltype maxMana) { this->maxMana = maxMana; }
 void StatBlock::setMovementSpeed(float speed) { this->movementSpeed = speed; }
 void StatBlock::setAttackSpeed(float speed) { this->attackSpeed = speed; }
 void StatBlock::setDamageMultiplier(float multiplier) { this->damageMultiplier = multiplier; }
+
+// Combat stat setters
+void StatBlock::setArmor(stattype armor) { this->armor = armor; }
+void StatBlock::setBaseDamage(stattype baseDamage) { this->baseDamage = baseDamage; }
 
 // Utility methods
 void StatBlock::addExp(exptype amount) {

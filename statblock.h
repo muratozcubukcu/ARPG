@@ -19,6 +19,10 @@ class StatBlock {
         float movementSpeed;      // Movement speed multiplier (1.0 = normal)
         float attackSpeed;        // Attack speed multiplier (1.0 = normal)
         float damageMultiplier;   // Damage taken multiplier (1.0 = normal)
+        
+        // Combat stats
+        stattype armor;           // Armor value
+        stattype baseDamage;      // Base damage value
 
     public:
         // Constructors
@@ -43,6 +47,10 @@ class StatBlock {
         float getMovementSpeed() const;
         float getAttackSpeed() const;
         float getDamageMultiplier() const;
+        
+        // Combat stat getters
+        stattype getArmor() const;
+        stattype getBaseDamage() const;
 
         
         // Setters
@@ -60,6 +68,10 @@ class StatBlock {
         void setMovementSpeed(float speed);
         void setAttackSpeed(float speed);
         void setDamageMultiplier(float multiplier);
+        
+        // Combat stat setters
+        void setArmor(stattype armor);
+        void setBaseDamage(stattype baseDamage);
 
         
         // Utility methods

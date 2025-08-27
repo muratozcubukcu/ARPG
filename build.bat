@@ -6,19 +6,22 @@ set CXX=g++
 set CXXFLAGS=-std=c++17 -Wall -Wextra -g
 
 REM Source files
-set SOURCES=main.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp
+set SOURCES=main.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp item.cpp inventory.cpp
 
 REM Test source files
-set TEST_SOURCES=test_statuseffects.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp
+set TEST_SOURCES=test_statuseffects.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp item.cpp inventory.cpp
 
 REM Status effects test source files
-set STATUS_EFFECTS_TEST_SOURCES=test_status_effects.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp
+set STATUS_EFFECTS_TEST_SOURCES=test_status_effects.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp item.cpp inventory.cpp
 
 REM Movement integration test source files
-set MOVEMENT_INTEGRATION_TEST_SOURCES=test_movement_integration.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp
+set MOVEMENT_INTEGRATION_TEST_SOURCES=test_movement_integration.cpp ability.cpp character.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp item.cpp inventory.cpp
+
+REM Inventory test source files
+set INVENTORY_TEST_SOURCES=test_inventory.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp item.cpp inventory.cpp
 
 REM Live movement test source files
-set LIVE_MOVEMENT_SOURCES=test_livemovement.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp
+set LIVE_MOVEMENT_SOURCES=test_livemovement.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp item.cpp inventory.cpp
 
 REM Clean previous build
 echo Cleaning previous build...
@@ -58,6 +61,12 @@ del /Q *.o 2>nul
 %CXX% %CXXFLAGS% -c %MOVEMENT_INTEGRATION_TEST_SOURCES%
 %CXX% *.o -o test_movement_integration.exe
 
+REM Build inventory test
+echo Building inventory test executable...
+del /Q *.o 2>nul
+%CXX% %CXXFLAGS% -c %INVENTORY_TEST_SOURCES%
+%CXX% *.o -o test_inventory.exe
+
 REM Clean up object files
 del /Q *.o 2>nul
 
@@ -69,6 +78,7 @@ echo - test_livemovement.exe (live WASD movement test)
 echo - test_statuseffects.exe (status effect test)
 echo - test_status_effects.exe (new status effects test)
 echo - test_movement_integration.exe (movement integration test)
+echo - test_inventory.exe (inventory system test)
 echo.
 echo To test live movement: test_livemovement.exe
 echo To run main game: rpg_game.exe

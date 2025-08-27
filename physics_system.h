@@ -112,8 +112,8 @@ private:
     std::vector<std::shared_ptr<PhysicsBody>> bodies;
     
     // Physics constants
-    const float GRAVITY = -9.81f;
-    const float MAX_VELOCITY = 50.0f;
+    float GRAVITY = -9.81f;
+    float MAX_VELOCITY = 50.0f;
     const float VELOCITY_THRESHOLD = 0.01f;
     
     // Spatial partitioning for collision detection
@@ -155,9 +155,18 @@ public:
     void setGridParameters(float cellSize, const Position& bounds);
     
     // Utility methods
-    void setGravity(float gravity) { /* TODO: Implement */ }
-    void setMaxVelocity(float maxVel) { /* TODO: Implement */ }
+    void setGravity(float gravity) { GRAVITY = gravity; }
+    void setMaxVelocity(float maxVel) { MAX_VELOCITY = maxVel; }
     size_t getBodyCount() const { return bodies.size(); }
+    
+    // Additional utility methods
+    std::vector<std::shared_ptr<PhysicsBody>> getBodiesInAABB(const Position& min, const Position& max);
+    std::vector<std::shared_ptr<PhysicsBody>> getBodiesAtPosition(const Position& position, float tolerance = 0.1f);
+    bool isPositionOccupied(const Position& position, float radius = 1.0f);
+    void applyImpulse(std::shared_ptr<PhysicsBody> body, const Position& impulse);
+    void setBodyCollider(std::shared_ptr<PhysicsBody> body, std::shared_ptr<Collider> collider);
+    void setBodyType(std::shared_ptr<PhysicsBody> body, BodyType type);
+    void setBodyMass(std::shared_ptr<PhysicsBody> body, float mass);
     
 private:
     // Helper methods

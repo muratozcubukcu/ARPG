@@ -330,13 +330,110 @@ std::vector<std::tuple<int, int, int>> PhysicsSystem::getGridIndices(const Posit
     return indices;
 }
 
+// Additional utility methods implementation
+std::vector<std::shared_ptr<PhysicsBody>> PhysicsSystem::getBodiesInAABB(const Position& min, const Position& max) {
+    std::vector<std::shared_ptr<PhysicsBody>> bodiesInAABB;
+    
+    for (const auto& body : bodies) {
+        if (!body->isActive) continue;
+        
+        Position bodyPos = body->position;
+        if (bodyPos.getX() >= min.getX() && bodyPos.getX() <= max.getX() &&
+            bodyPos.getY() >= min.getY() && bodyPos.getY() <= max.getY() &&
+            bodyPos.getZ() >= min.getZ() && bodyPos.getZ() <= max.getZ()) {
+            bodiesInAABB.push_back(body);
+        }
+    }
+    
+    return bodiesInAABB;
+}
+
+std::vector<std::shared_ptr<PhysicsBody>> PhysicsSystem::getBodiesAtPosition(const Position& position, float tolerance) {
+    std::vector<std::shared_ptr<PhysicsBody>> bodiesAtPosition;
+    
+    for (const auto& body : bodies) {
+        if (!body->isActive) continue;
+        
+        double distance = position.distanceTo(body->position);
+        if (distance <= tolerance) {
+            bodiesAtPosition.push_back(body);
+        }
+    }
+    
+    return bodiesAtPosition;
+}
+
+bool PhysicsSystem::isPositionOccupied(const Position& position, float radius) {
+    for (const auto& body : bodies) {
+        if (!body->isActive) continue;
+        
+        double distance = position.distanceTo(body->position);
+        if (distance < radius) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void PhysicsSystem::applyImpulse(std::shared_ptr<PhysicsBody> body, const Position& impulse) {
+    if (!body || body->bodyType == BodyType::STATIC) return;
+    
+    // Apply impulse to velocity: v = v + impulse / mass
+    body->velocity = body->velocity + impulse * body->invMass;
+}
+
+void PhysicsSystem::setBodyCollider(std::shared_ptr<PhysicsBody> body, std::shared_ptr<Collider> collider) {
+    if (body && collider) {
+        body->collider = collider;
+        collider->updateTransform(body->position);
+    }
+}
+
+void PhysicsSystem::setBodyType(std::shared_ptr<PhysicsBody> body, BodyType type) {
+    if (body) {
+        body->bodyType = type;
+        if (type == BodyType::STATIC) {
+            body->velocity = Position(0, 0, 0);
+            body->acceleration = Position(0, 0, 0);
+            body->force = Position(0, 0, 0);
+        }
+    }
+}
+
+void PhysicsSystem::setBodyMass(std::shared_ptr<PhysicsBody> body, float mass) {
+    if (body && mass > 0) {
+        body->mass = mass;
+        body->invMass = 1.0f / mass;
+    } else if (body && mass <= 0) {
+        body->mass = 0.0f;
+        body->invMass = 0.0f; // Infinite mass (static)
+    }
+}
+
 // Collider implementations
 bool SphereCollider::checkCollision(const Collider* other) const {
     if (const SphereCollider* sphere = dynamic_cast<const SphereCollider*>(other)) {
         double distance = center.distanceTo(sphere->center);
         return distance < (radius + sphere->radius);
     }
-    // TODO: Add other collider type checks
+    else if (const AABBCollider* aabb = dynamic_cast<const AABBCollider*>(other)) {
+        // Sphere-AABB collision detection
+        Position aabbCenter = aabb->getCenter();
+        Position aabbHalfSize = (aabb->getMax() - aabb->getMin()) * 0.5;
+        
+        // Find closest point on AABB to sphere center
+        Position closestPoint;
+        closestPoint.setX(std::max(aabbCenter.getX() - aabbHalfSize.getX(), 
+                                  std::min(center.getX(), aabbCenter.getX() + aabbHalfSize.getX())));
+        closestPoint.setY(std::max(aabbCenter.getY() - aabbHalfSize.getY(), 
+                                  std::min(center.getY(), aabbCenter.getY() + aabbHalfSize.getY())));
+        closestPoint.setZ(std::max(aabbCenter.getZ() - aabbHalfSize.getZ(), 
+                                  std::min(center.getZ(), aabbCenter.getZ() + aabbHalfSize.getZ())));
+        
+        // Check if closest point is inside sphere
+        double distance = center.distanceTo(closestPoint);
+        return distance < radius;
+    }
     return false;
 }
 
@@ -364,6 +461,23 @@ bool AABBCollider::checkCollision(const Collider* other) const {
                  max.getY() < aabb->min.getY() || min.getY() > aabb->max.getY() ||
                  max.getZ() < aabb->min.getZ() || min.getZ() > aabb->max.getZ());
     }
-    // TODO: Add other collider type checks
+    else if (const SphereCollider* sphere = dynamic_cast<const SphereCollider*>(other)) {
+        // AABB-Sphere collision detection (same as Sphere-AABB)
+        Position aabbCenter = getCenter();
+        Position aabbHalfSize = (max - min) * 0.5;
+        
+        // Find closest point on AABB to sphere center
+        Position closestPoint;
+        closestPoint.setX(std::max(aabbCenter.getX() - aabbHalfSize.getX(), 
+                                  std::min(sphere->getCenter().getX(), aabbCenter.getX() + aabbHalfSize.getX())));
+        closestPoint.setY(std::max(aabbCenter.getY() - aabbHalfSize.getY(), 
+                                  std::min(sphere->getCenter().getY(), aabbCenter.getY() + aabbHalfSize.getY())));
+        closestPoint.setZ(std::max(aabbCenter.getZ() - aabbHalfSize.getZ(), 
+                                  std::min(sphere->getCenter().getZ(), aabbCenter.getZ() + aabbHalfSize.getZ())));
+        
+        // Check if closest point is inside sphere
+        double distance = sphere->getCenter().distanceTo(closestPoint);
+        return distance < sphere->getRadius();
+    }
     return false;
 }

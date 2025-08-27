@@ -6,6 +6,7 @@
 #include "statblock.h"
 #include "position.h"
 #include "statuseffect.h"
+#include "inventory.h"
 #include <string>
 #include <vector>
 
@@ -22,6 +23,7 @@ class Character {
         std::vector<Ability> abilities;  // List of unlocked abilities
         Position position;     // 3D position in the world
         std::vector<StatusEffect> statusEffects;  // Active status effects
+        Inventory inventory;    // Character's inventory and equipment
         
         // Crowd control flags for missing StatusEffect types
         bool isStunned;        // Cannot act
@@ -86,6 +88,18 @@ class Character {
         void damage(welltype amount);
         void restoreMana(welltype amount);
         void consumeMana(welltype amount);
+        
+        // Inventory methods
+        Inventory& getInventory();
+        const Inventory& getInventory() const;
+        bool addItemToInventory(const Item& item);
+        bool removeItemFromInventory(const std::string& itemName, stattype quantity = 1);
+        bool hasItem(const std::string& itemName) const;
+        stattype getItemCount(const std::string& itemName) const;
+        bool equipItem(const Item& item, EquipmentSlot slot);
+        bool unequipItem(EquipmentSlot slot);
+        Item* getEquippedItem(EquipmentSlot slot);
+        void updateStatsFromEquipment();
         
         // Character info
         std::string getFullDescription() const;

@@ -256,3 +256,68 @@ void Character::setSilenced(bool silenced) {
 void Character::setRooted(bool rooted) {
     isRooted = rooted;
 }
+
+// Inventory methods
+Inventory& Character::getInventory() {
+    return inventory;
+}
+
+const Inventory& Character::getInventory() const {
+    return inventory;
+}
+
+bool Character::addItemToInventory(const Item& item) {
+    return inventory.addItem(item);
+}
+
+bool Character::removeItemFromInventory(const std::string& itemName, stattype quantity) {
+    return inventory.removeItem(itemName, quantity);
+}
+
+bool Character::hasItem(const std::string& itemName) const {
+    return inventory.hasItem(itemName);
+}
+
+stattype Character::getItemCount(const std::string& itemName) const {
+    return inventory.getItemCount(itemName);
+}
+
+bool Character::equipItem(const Item& item, EquipmentSlot slot) {
+    bool success = inventory.equipItem(item, slot);
+    if (success) {
+        updateStatsFromEquipment();
+    }
+    return success;
+}
+
+bool Character::unequipItem(EquipmentSlot slot) {
+    bool success = inventory.unequipItem(slot);
+    if (success) {
+        updateStatsFromEquipment();
+    }
+    return success;
+}
+
+Item* Character::getEquippedItem(EquipmentSlot slot) {
+    return inventory.getEquippedItem(slot);
+}
+
+void Character::updateStatsFromEquipment() {
+    // Get base stats from race and class
+    StatBlock baseStats;
+    baseStats.setStrength(race.getStrengthBonus() + characterClass.getBaseStrength());
+    baseStats.setDexterity(race.getDexterityBonus() + characterClass.getBaseDexterity());
+    baseStats.setIntelligence(race.getIntelligenceBonus() + characterClass.getBaseIntelligence());
+    baseStats.setMaxHealth(race.getHealthBonus() + characterClass.getBaseMaxHealth());
+    baseStats.setMaxMana(race.getManaBonus() + characterClass.getBaseMaxMana());
+    
+    // Add equipment bonuses
+    baseStats.setStrength(baseStats.getStrength() + inventory.getTotalStrengthBonus());
+    baseStats.setDexterity(baseStats.getDexterity() + inventory.getTotalDexterityBonus());
+    baseStats.setIntelligence(baseStats.getIntelligence() + inventory.getTotalIntelligenceBonus());
+    baseStats.setMaxHealth(baseStats.getMaxHealth() + inventory.getTotalHealthBonus());
+    baseStats.setMaxMana(baseStats.getMaxMana() + inventory.getTotalManaBonus());
+    
+    // Update final stats
+    finalStats = baseStats;
+}
