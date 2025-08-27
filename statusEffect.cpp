@@ -265,6 +265,58 @@ void StatusEffect::applyEffectToCharacter(Character& target) {
                 }
             }
             break;
+            
+        // Crowd control effects
+        case STUN:
+            target.setStunned(true);
+            std::cout << target.getName() << " is stunned and cannot act!" << std::endl;
+            break;
+        case SILENCE:
+            target.setSilenced(true);
+            std::cout << target.getName() << " is silenced and cannot cast spells!" << std::endl;
+            break;
+        case ROOT:
+            target.setRooted(true);
+            std::cout << target.getName() << " is rooted and cannot move!" << std::endl;
+            break;
+            
+        // Speed modification effects
+        case SLOW_MOVEMENT:
+            {
+                float currentSpeed = target.getStats().getMovementSpeed();
+                float newSpeed = currentSpeed * (1.0f - (magnitude / 100.0f)); // magnitude as percentage
+                if (newSpeed < 0.1f) newSpeed = 0.1f; // Minimum 10% speed
+                target.getStatsRef().setMovementSpeed(newSpeed);
+                std::cout << target.getName() << "'s movement speed reduced to " << (newSpeed * 100) << "%!" << std::endl;
+            }
+            break;
+        case SLOW_ATTACK:
+            {
+                float currentSpeed = target.getStats().getAttackSpeed();
+                float newSpeed = currentSpeed * (1.0f - (magnitude / 100.0f)); // magnitude as percentage
+                if (newSpeed < 0.1f) newSpeed = 0.1f; // Minimum 10% speed
+                target.getStatsRef().setAttackSpeed(newSpeed);
+                std::cout << target.getName() << "'s attack speed reduced to " << (newSpeed * 100) << "%!" << std::endl;
+            }
+            break;
+            
+        // Damage modification effects
+        case VULNERABILITY:
+            {
+                float currentMultiplier = target.getStats().getDamageMultiplier();
+                float newMultiplier = currentMultiplier * (1.0f + (magnitude / 100.0f)); // magnitude as percentage
+                target.getStatsRef().setDamageMultiplier(newMultiplier);
+                std::cout << target.getName() << " takes " << (newMultiplier * 100) << "% damage (vulnerable)!" << std::endl;
+            }
+            break;
+        case RESISTANCE:
+            {
+                float currentMultiplier = target.getStats().getDamageMultiplier();
+                float newMultiplier = currentMultiplier * (1.0f - (magnitude / 100.0f)); // magnitude as percentage
+                if (newMultiplier < 0.1f) newMultiplier = 0.1f; // Minimum 10% damage
+                target.getStatsRef().setDamageMultiplier(newMultiplier);
+            }
+            
         default:
             break;
     }
@@ -302,6 +354,41 @@ void StatusEffect::removeEffectFromCharacter(Character& target) {
         case DEBUFF_MAX_MANA:
             target.getStats().setMaxMana(target.getStats().getMaxMana() + magnitude);
             break;
+            
+        // Crowd control effects
+        case STUN:
+            target.setStunned(false);
+            std::cout << target.getName() << " is no longer stunned!" << std::endl;
+            break;
+        case SILENCE:
+            target.setSilenced(false);
+            std::cout << target.getName() << " is no longer silenced!" << std::endl;
+            break;
+        case ROOT:
+            target.setRooted(false);
+            std::cout << target.getName() << " is no longer rooted!" << std::endl;
+            break;
+            
+        // Speed modification effects
+        case SLOW_MOVEMENT:
+            target.getStatsRef().setMovementSpeed(1.0f); // Reset to normal
+            std::cout << target.getName() << "'s movement speed restored to normal!" << std::endl;
+            break;
+        case SLOW_ATTACK:
+            target.getStatsRef().setAttackSpeed(1.0f); // Reset to normal
+            std::cout << target.getName() << "'s attack speed restored to normal!" << std::endl;
+            break;
+            
+        // Damage modification effects
+        case VULNERABILITY:
+            target.getStatsRef().setDamageMultiplier(1.0f); // Reset to normal
+            std::cout << target.getName() << "'s damage vulnerability removed!" << std::endl;
+            break;
+        case RESISTANCE:
+            target.getStatsRef().setDamageMultiplier(1.0f); // Reset to normal
+            std::cout << target.getName() << "'s damage resistance removed!" << std::endl;
+            break;
+            
         default:
             break;
     }

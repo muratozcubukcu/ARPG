@@ -5,6 +5,7 @@ TARGET = rpg_game
 TEST_TARGET = test_statuseffects
 LIVE_MOVEMENT_TARGET = test_livemovement
 MISSING_TEST_TARGET = test_missing_statuseffects
+STATUS_EFFECTS_TEST_TARGET = test_status_effects
 
 # Source files
 SOURCES = main.cpp \
@@ -73,10 +74,27 @@ MISSING_TEST_SOURCES = test_missing_statuseffects.cpp \
                        physics_system.cpp \
                        position.cpp
 
+# Status Effects test source files
+STATUS_EFFECTS_TEST_SOURCES = test_status_effects.cpp \
+                             ability.cpp \
+                             character.cpp \
+                             class.cpp \
+                             race.cpp \
+                             mob.cpp \
+                             statblock.cpp \
+                             statuseffect.cpp \
+                             gameengine.cpp \
+                             player_controller.cpp \
+                             camera.cpp \
+                             input_manager.cpp \
+                             physics_system.cpp \
+                             position.cpp
+
 # Test object files
 TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o)
 LIVE_MOVEMENT_OBJECTS = $(LIVE_MOVEMENT_SOURCES:.cpp=.o)
 MISSING_TEST_OBJECTS = $(MISSING_TEST_SOURCES:.cpp=.o)
+STATUS_EFFECTS_TEST_OBJECTS = $(STATUS_EFFECTS_TEST_SOURCES:.cpp=.o)
 
 # Default target
 all: $(TARGET)
@@ -97,13 +115,17 @@ $(TEST_TARGET): $(TEST_OBJECTS)
 $(MISSING_TEST_TARGET): $(MISSING_TEST_OBJECTS)
 	$(CXX) $(MISSING_TEST_OBJECTS) -o $(MISSING_TEST_TARGET)
 
+# Status Effects test executable
+$(STATUS_EFFECTS_TEST_TARGET): $(STATUS_EFFECTS_TEST_OBJECTS)
+	$(CXX) $(STATUS_EFFECTS_TEST_OBJECTS) -o $(STATUS_EFFECTS_TEST_TARGET)
+
 # Compile source files to object files
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean build files
 clean:
-	del /Q *.o $(TARGET).exe $(TEST_TARGET).exe $(LIVE_MOVEMENT_TARGET).exe $(MISSING_TEST_TARGET).exe 2>nul || true
+	del /Q *.o $(TARGET).exe $(TEST_TARGET).exe $(LIVE_MOVEMENT_TARGET).exe $(MISSING_TEST_TARGET).exe $(STATUS_EFFECTS_TEST_TARGET).exe 2>nul || true
 
 # Clean and rebuild
 rebuild: clean all
@@ -124,8 +146,12 @@ test: $(TEST_TARGET)
 test_missing: $(MISSING_TEST_TARGET)
 	./$(MISSING_TEST_TARGET)
 
+# Run the status effects test
+test_status: $(STATUS_EFFECTS_TEST_TARGET)
+	./$(STATUS_EFFECTS_TEST_TARGET)
+
 # Phony targets
-.PHONY: all clean rebuild run test test_missing test_movement
+.PHONY: all clean rebuild run test test_missing test_movement test_status
 
 # Dependencies
 ability.o: ability.h types.h character.h mob.h
@@ -143,3 +169,4 @@ main.o: gameengine.h character.h class.h race.h
 test_statuseffects.o: statuseffect.h character.h class.h race.h mob.h gameengine.h
 test_livemovement.o: gameengine.h character.h class.h race.h movementsystem.h inputhandler.h
 test_missing_statuseffects.o: statuseffect.h character.h class.h race.h mob.h gameengine.h
+test_status_effects.o: statuseffect.h character.h class.h race.h mob.h gameengine.h

@@ -39,6 +39,7 @@ class Character {
         
         // Get final calculated stats
         StatBlock getStats() const;
+        StatBlock& getStatsRef(); // Non-const reference for modifications
         
         // Crowd control getters
         bool getIsStunned() const { return isStunned; }

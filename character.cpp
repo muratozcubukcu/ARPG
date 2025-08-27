@@ -34,6 +34,7 @@ std::string Character::getName() const { return name; }
 Race Character::getRace() const { return race; }
 Class Character::getCharacterClass() const { return characterClass; }
 StatBlock Character::getStats() const { return finalStats; }
+StatBlock& Character::getStatsRef() { return finalStats; }
 
 // Position method implementations
 Position Character::getPosition() const { return position; }
