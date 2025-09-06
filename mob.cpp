@@ -170,3 +170,10 @@ void Mob::setSilenced(bool silenced) {
 void Mob::setRooted(bool rooted) {
     isRooted = rooted;
 }
+
+// Comparison operator
+bool Mob::operator==(const Mob& other) const {
+    // Compare by position and race for now
+    // In a real game, you might want to compare by unique ID
+    return position == other.position && race.getName() == other.race.getName();
+}

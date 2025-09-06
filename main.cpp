@@ -200,6 +200,43 @@ int main() {
     std::cout << "Player inventory:" << std::endl;
     player->getInventory().print();
     
+    std::cout << "\n=== Testing Dungeon System ===" << std::endl;
+    
+    // Test dungeon system
+    DungeonManager& dungeonMgr = engine.getDungeonManager();
+    
+    std::cout << "Available dungeons:" << std::endl;
+    dungeonMgr.printAllDungeons();
+    
+    // Test dungeon access
+    std::cout << "\nDungeons available for level " << player->getStats().getLevel() << ":" << std::endl;
+    auto availableDungeons = dungeonMgr.getAvailableDungeons(player->getStats().getLevel());
+    for (const auto& dungeonName : availableDungeons) {
+        std::cout << "  - " << dungeonName << std::endl;
+    }
+    
+    // Test entering a dungeon
+    if (!availableDungeons.empty()) {
+        std::cout << "\nAttempting to enter " << availableDungeons[0] << "..." << std::endl;
+        bool entered = dungeonMgr.enterDungeon(*player, availableDungeons[0]);
+        
+        if (entered) {
+            std::cout << "Successfully entered dungeon!" << std::endl;
+            std::cout << "Player position: " << player->getPosition() << std::endl;
+            
+            // Get dungeon info
+            auto dungeon = dungeonMgr.getDungeon(availableDungeons[0]);
+            if (dungeon) {
+                std::cout << "\nDungeon information:" << std::endl;
+                std::cout << dungeon->getDescription();
+                
+                // Exit dungeon
+                dungeon->exit(*player);
+                std::cout << "Exited dungeon. Player position: " << player->getPosition() << std::endl;
+            }
+        }
+    }
+    
     std::cout << "\n=== Game Complete ===" << std::endl;
     return 0;
 }

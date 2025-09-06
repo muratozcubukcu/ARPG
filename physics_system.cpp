@@ -1,6 +1,7 @@
 #include "physics_system.h"
 #include <iostream>
 #include <algorithm>
+#include <set>
 
 PhysicsSystem::PhysicsSystem() : cellSize(10.0f), gridBounds(100.0f, 100.0f, 20.0f) {
     std::cout << "PhysicsSystem initialized" << std::endl;
@@ -42,20 +43,51 @@ void PhysicsSystem::simulatePhysics(float deltaTime) {
 }
 
 void PhysicsSystem::detectCollisions() {
-    // Simple broad phase collision detection using spatial grid
+    // Optimized broad phase collision detection using spatial grid
+    std::set<std::pair<size_t, size_t>> checkedPairs; // Avoid checking same pair twice
+    
     for (size_t i = 0; i < bodies.size(); ++i) {
         if (!bodies[i]->isActive) continue;
         
-        for (size_t j = i + 1; j < bodies.size(); ++j) {
-            if (!bodies[j]->isActive) continue;
+        // Get grid cells this body occupies
+        auto gridIndices = getGridIndices(bodies[i]->position, 
+                                        bodies[i]->collider ? bodies[i]->collider->getRadius() : 1.0f);
+        
+        for (const auto& gridIndex : gridIndices) {
+            int x = std::get<0>(gridIndex);
+            int y = std::get<1>(gridIndex);
+            int z = std::get<2>(gridIndex);
             
-            if (checkCollision(bodies[i].get(), bodies[j].get())) {
-                // Collision detected - trigger callbacks
-                if (bodies[i]->onCollisionEnter) {
-                    bodies[i]->onCollisionEnter(bodies[j].get());
-                }
-                if (bodies[j]->onCollisionEnter) {
-                    bodies[j]->onCollisionEnter(bodies[i].get());
+            if (x >= 0 && x < static_cast<int>(spatialGrid.size()) &&
+                y >= 0 && y < static_cast<int>(spatialGrid[0].size()) &&
+                z >= 0 && z < static_cast<int>(spatialGrid[0][0].size())) {
+                
+                const auto& cell = spatialGrid[x][y][z];
+                
+                // Check collisions with other bodies in this cell
+                for (const auto& otherBody : cell.bodies) {
+                    if (otherBody == bodies[i] || !otherBody->isActive) continue;
+                    
+                    // Create unique pair identifier
+                    size_t minIdx = std::min(i, static_cast<size_t>(std::distance(bodies.begin(), 
+                                        std::find(bodies.begin(), bodies.end(), otherBody))));
+                    size_t maxIdx = std::max(i, static_cast<size_t>(std::distance(bodies.begin(), 
+                                        std::find(bodies.begin(), bodies.end(), otherBody))));
+                    auto pair = std::make_pair(minIdx, maxIdx);
+                    
+                    if (checkedPairs.find(pair) == checkedPairs.end()) {
+                        checkedPairs.insert(pair);
+                        
+                        if (checkCollision(bodies[i].get(), otherBody.get())) {
+                            // Collision detected - trigger callbacks
+                            if (bodies[i]->onCollisionEnter) {
+                                bodies[i]->onCollisionEnter(otherBody.get());
+                            }
+                            if (otherBody->onCollisionEnter) {
+                                otherBody->onCollisionEnter(bodies[i].get());
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -63,25 +95,36 @@ void PhysicsSystem::detectCollisions() {
 }
 
 void PhysicsSystem::resolveCollisions() {
-    // Simple collision resolution - push bodies apart
+    // Enhanced collision resolution with proper physics response
     for (size_t i = 0; i < bodies.size(); ++i) {
         if (!bodies[i]->isActive || bodies[i]->bodyType == BodyType::STATIC) continue;
+        
+        // Ground collision check (z = 0)
+        if (bodies[i]->position.getZ() <= 0.0f) {
+            bodies[i]->position.setZ(0.0f);
+            if (bodies[i]->velocity.getZ() < 0.0f) {
+                bodies[i]->velocity.setZ(0.0f);
+            }
+        }
         
         for (size_t j = i + 1; j < bodies.size(); ++j) {
             if (!bodies[j]->isActive || bodies[j]->bodyType == BodyType::STATIC) continue;
             
             if (checkCollision(bodies[i].get(), bodies[j].get())) {
-                // Calculate separation vector
+                // Calculate collision normal and depth
                 Position separation = bodies[i]->position - bodies[j]->position;
                 double distance = separation.length();
                 
                 if (distance > 0) {
-                    double minDistance = 1.0; // Minimum separation distance
+                    // Get collider radii for proper separation
+                    float radius1 = bodies[i]->collider ? bodies[i]->collider->getRadius() : 0.5f;
+                    float radius2 = bodies[j]->collider ? bodies[j]->collider->getRadius() : 0.5f;
+                    double minDistance = radius1 + radius2;
                     double overlap = minDistance - distance;
                     
                     if (overlap > 0) {
-                        Position separationDir = separation.normalize();
-                        Position correction = separationDir * (overlap * 0.5);
+                        Position collisionNormal = separation.normalize();
+                        Position correction = collisionNormal * (overlap * 0.5);
                         
                         // Move bodies apart
                         if (bodies[i]->bodyType == BodyType::DYNAMIC) {
@@ -89,6 +132,48 @@ void PhysicsSystem::resolveCollisions() {
                         }
                         if (bodies[j]->bodyType == BodyType::DYNAMIC) {
                             bodies[j]->position = bodies[j]->position - correction;
+                        }
+                        
+                        // Apply collision response (bounce, friction, etc.)
+                        if (bodies[i]->bodyType == BodyType::DYNAMIC && bodies[j]->bodyType == BodyType::DYNAMIC) {
+                            // Calculate relative velocity
+                            Position relativeVel = bodies[i]->velocity - bodies[j]->velocity;
+                            double velAlongNormal = relativeVel.dot(collisionNormal);
+                            
+                            // Only resolve if bodies are moving toward each other
+                            if (velAlongNormal < 0) {
+                                // Calculate restitution (bounciness)
+                                float restitution = std::min(bodies[i]->material.restitution, 
+                                                           bodies[j]->material.restitution);
+                                
+                                // Calculate impulse
+                                double j = -(1 + restitution) * velAlongNormal;
+                                j /= bodies[i]->invMass + bodies[j]->invMass;
+                                
+                                // Apply impulse
+                                Position impulse = collisionNormal * j;
+                                bodies[i]->velocity = bodies[i]->velocity + impulse * bodies[i]->invMass;
+                                bodies[j]->velocity = bodies[j]->velocity - impulse * bodies[j]->invMass;
+                                
+                                // Apply friction
+                                Position tangent = relativeVel - collisionNormal * velAlongNormal;
+                                if (tangent.length() > 0.001) {
+                                    tangent = tangent.normalize();
+                                    double jt = -relativeVel.dot(tangent);
+                                    jt /= bodies[i]->invMass + bodies[j]->invMass;
+                                    
+                                    // Clamp friction impulse
+                                    float friction = std::min(bodies[i]->material.friction, 
+                                                            bodies[j]->material.friction);
+                                    // Custom clamp implementation for older C++ versions
+                                    if (jt < -j * friction) jt = -j * friction;
+                                    if (jt > j * friction) jt = j * friction;
+                                    
+                                    Position frictionImpulse = tangent * jt;
+                                    bodies[i]->velocity = bodies[i]->velocity + frictionImpulse * bodies[i]->invMass;
+                                    bodies[j]->velocity = bodies[j]->velocity - frictionImpulse * bodies[j]->invMass;
+                                }
+                            }
                         }
                     }
                 }

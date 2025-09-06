@@ -4,10 +4,14 @@
 #include "position.h"
 #include "player_controller.h"
 #include "physics_system.h"
+#include "loot_system.h"
+#include "dungeon.h"
+#include "ps1_graphics_manager.h"
 #include <string>
 #include <vector>
 #include <chrono>
 #include <memory>
+#include <map>
 
 // Forward declarations
 class Character;
@@ -59,6 +63,14 @@ private:
     std::unique_ptr<ProjectileManager> projectileManager;
     std::unique_ptr<PlayerController> playerController;
     std::unique_ptr<PhysicsSystem> physicsSystem;
+    std::shared_ptr<LootSystem> lootSystem;
+    std::unique_ptr<LootDropManager> lootDropManager;
+    std::unique_ptr<DungeonManager> dungeonManager;
+    std::unique_ptr<PS1GraphicsManager> graphicsManager;
+    
+    // Physics body storage
+    std::map<std::string, std::shared_ptr<PhysicsBody>> characterPhysicsBodies;
+    std::map<std::string, std::shared_ptr<PhysicsBody>> mobPhysicsBodies;
     
     // Timing
     std::chrono::steady_clock::time_point lastUpdateTime;
@@ -95,6 +107,16 @@ public:
     // Physics system access
     PhysicsSystem& getPhysicsSystem() { return *physicsSystem; }
     
+    // Loot system access
+    LootSystem& getLootSystem() { return *lootSystem; }
+    LootDropManager& getLootDropManager() { return *lootDropManager; }
+    
+    // Dungeon system access
+    DungeonManager& getDungeonManager() { return *dungeonManager; }
+    
+    // Graphics system access
+    PS1GraphicsManager& getGraphicsManager() { return *graphicsManager; }
+    
     // Game state control
     void pause() { isPaused = true; }
     void resume() { isPaused = false; }
@@ -110,6 +132,17 @@ public:
     // Debug methods
     void printGameState() const;
     void printProjectileInfo() const;
+    
+    // Physics integration methods
+    void syncPhysicsBodies();
+    void updateEntityPhysics(float deltaTime);
+    
+    // Entity access methods
+    Mob& getMob(const std::string& description);
+    
+    // Loot generation methods
+    void generateMobLoot(const Mob& mob, const Position& dropPosition);
+    void generateDungeonLoot(const std::string& dungeonTier, const Position& dropPosition, leveltype playerLevel);
 };
 
 #endif // GAMEENGINE_H

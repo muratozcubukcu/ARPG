@@ -67,4 +67,7 @@ class Mob {
         void heal(welltype amount);
         void restoreMana(welltype amount);
         void consumeMana(welltype amount);
+        
+        // Comparison operators
+        bool operator==(const Mob& other) const;
 };

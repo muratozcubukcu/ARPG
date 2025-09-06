@@ -163,6 +163,8 @@ public:
     
     // Factory methods for common items
     static Item createSword(const std::string& name, ItemRarity rarity = ItemRarity::COMMON);
+    static Item createStaff(const std::string& name, ItemRarity rarity = ItemRarity::COMMON);
+    static Item createBow(const std::string& name, ItemRarity rarity = ItemRarity::COMMON);
     static Item createArmor(const std::string& name, ArmorType armorType, ItemRarity rarity = ItemRarity::COMMON);
     static Item createPotion(const std::string& name, welltype healthRestore, welltype manaRestore);
     static Item createMaterial(const std::string& name, stattype maxStack = 99);

@@ -2,6 +2,7 @@
 #include "camera.h"
 #include "input_manager.h"
 #include <iostream>
+#include <algorithm>
 
 PlayerController::PlayerController(Character* character)
     : playerCharacter(character), camera(std::make_unique<Camera>()), 
@@ -179,7 +180,48 @@ void PlayerController::checkGroundCollision() {
 }
 
 void PlayerController::resolveCollisions() {
-    // TODO: Implement proper collision resolution with physics system
+    // Enhanced collision resolution with physics system integration
+    if (!playerCharacter) return;
+    
+    Position playerPos = playerCharacter->getPosition();
+    
+    // Ground collision
+    if (playerPos.getZ() < 0.0f) {
+        playerCharacter->setPosition(playerPos.getX(), playerPos.getY(), 0.0f);
+        
+        // Reset vertical velocity when hitting ground
+        if (movementState.velocity.getZ() < 0) {
+            movementState.velocity.setZ(0);
+            movementState.isGrounded = true;
+            movementState.isJumping = false;
+        }
+    }
+    
+    // Wall collision (simple boundary checking)
+    const float worldBounds = 100.0f; // Match physics system bounds
+    if (std::abs(playerPos.getX()) > worldBounds) {
+        float clampedX = playerPos.getX();
+        if (clampedX < -worldBounds) clampedX = -worldBounds;
+        if (clampedX > worldBounds) clampedX = worldBounds;
+        playerCharacter->setPosition(clampedX, playerPos.getY(), playerPos.getZ());
+        movementState.velocity.setX(0); // Stop horizontal movement
+    }
+    
+    if (std::abs(playerPos.getY()) > worldBounds) {
+        float clampedY = playerPos.getY();
+        if (clampedY < -worldBounds) clampedY = -worldBounds;
+        if (clampedY > worldBounds) clampedY = worldBounds;
+        playerPos = playerCharacter->getPosition(); // Get updated position
+        playerCharacter->setPosition(playerPos.getX(), clampedY, playerPos.getZ());
+        movementState.velocity.setY(0); // Stop horizontal movement
+    }
+    
+    // Ceiling collision (prevent flying too high)
+    const float maxHeight = 50.0f;
+    if (playerPos.getZ() > maxHeight) {
+        playerCharacter->setPosition(playerPos.getX(), playerPos.getY(), maxHeight);
+        movementState.velocity.setZ(0);
+    }
 }
 
 Position PlayerController::getPlayerPosition() const {

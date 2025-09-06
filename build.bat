@@ -3,84 +3,66 @@ echo Building RPG C++ Project...
 
 REM Set compiler and flags
 set CXX=g++
-set CXXFLAGS=-std=c++17 -Wall -Wextra -g
+set CXXFLAGS=-std=c++17 -Wall -Wextra -g -ISFML\include -Iglm -IC:\MinGW\include
+set TARGET=rpg_game.exe
 
 REM Source files
-set SOURCES=main.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp item.cpp inventory.cpp
+set SOURCES=main.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp inventory.cpp item.cpp loot_system.cpp dungeon.cpp
 
-REM Test source files
-set TEST_SOURCES=test_statuseffects.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp item.cpp inventory.cpp
-
-REM Status effects test source files
-set STATUS_EFFECTS_TEST_SOURCES=test_status_effects.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp item.cpp inventory.cpp
-
-REM Movement integration test source files
-set MOVEMENT_INTEGRATION_TEST_SOURCES=test_movement_integration.cpp ability.cpp character.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp item.cpp inventory.cpp
-
-REM Inventory test source files
-set INVENTORY_TEST_SOURCES=test_inventory.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp item.cpp inventory.cpp
-
-REM Live movement test source files
-set LIVE_MOVEMENT_SOURCES=test_livemovement.cpp ability.cpp character.cpp class.cpp race.cpp mob.cpp statblock.cpp statuseffect.cpp gameengine.cpp player_controller.cpp camera.cpp input_manager.cpp physics_system.cpp position.cpp item.cpp inventory.cpp
-
-REM Clean previous build
-echo Cleaning previous build...
-del /Q *.o 2>nul
-del /Q rpg_game.exe 2>nul
-del /Q test_statuseffects.exe 2>nul
-del /Q test_livemovement.exe 2>nul
-del /Q test_status_effects.exe 2>nul
-del /Q test_movement_integration.exe 2>nul
-
-REM Build main game
-echo Building main game...
-%CXX% %CXXFLAGS% -c %SOURCES%
-%CXX% *.o -o rpg_game.exe
-
-REM Build live movement test
-echo Building live movement test...
-del /Q *.o 2>nul
-%CXX% %CXXFLAGS% -c %LIVE_MOVEMENT_SOURCES%
-%CXX% *.o -o test_livemovement.exe
-
-REM Build test
-echo Building test executable...
-del /Q *.o 2>nul
-%CXX% %CXXFLAGS% -c %TEST_SOURCES%
-%CXX% *.o -o test_statuseffects.exe
-
-REM Build status effects test
-echo Building status effects test executable...
-del /Q *.o 2>nul
-%CXX% %CXXFLAGS% -c %STATUS_EFFECTS_TEST_SOURCES%
-%CXX% *.o -o test_status_effects.exe
-
-REM Build movement integration test
-echo Building movement integration test executable...
-del /Q *.o 2>nul
-%CXX% %CXXFLAGS% -c %MOVEMENT_INTEGRATION_TEST_SOURCES%
-%CXX% *.o -o test_movement_integration.exe
-
-REM Build inventory test
-echo Building inventory test executable...
-del /Q *.o 2>nul
-%CXX% %CXXFLAGS% -c %INVENTORY_TEST_SOURCES%
-%CXX% *.o -o test_inventory.exe
-
-REM Clean up object files
-del /Q *.o 2>nul
-
-echo Build complete!
-echo.
-echo Available executables:
-echo - rpg_game.exe (main game)
-echo - test_livemovement.exe (live WASD movement test)
-echo - test_statuseffects.exe (status effect test)
-echo - test_status_effects.exe (new status effects test)
-echo - test_movement_integration.exe (movement integration test)
-echo - test_inventory.exe (inventory system test)
-echo.
-echo To test live movement: test_livemovement.exe
-echo To run main game: rpg_game.exe
-echo To test new status effects: test_status_effects.exe
-echo To test movement integration: test_movement_integration.exe
+REM Parse command line arguments
+if "%1"=="run" (
+    echo Building and running main game...
+    %CXX% %CXXFLAGS% -o %TARGET% %SOURCES% -LSFML\lib -lsfml-graphics -lsfml-window -lsfml-system -lopengl32 -lgdi32
+    if %ERRORLEVEL% EQU 0 (
+        echo Running %TARGET%...
+        %TARGET%
+    )
+) else if "%1"=="test" (
+    echo Building and running tests...
+    %CXX% %CXXFLAGS% -o test_dungeon_system.exe test_dungeon_system.cpp %SOURCES%
+    if %ERRORLEVEL% EQU 0 (
+        echo Running dungeon system test...
+        test_dungeon_system.exe
+    )
+    %CXX% %CXXFLAGS% -o test_inventory.exe test_inventory.cpp %SOURCES%
+    if %ERRORLEVEL% EQU 0 (
+        echo Running inventory test...
+        test_inventory.exe
+    )
+    %CXX% %CXXFLAGS% -o test_loot_system.exe test_loot_system.cpp %SOURCES%
+    if %ERRORLEVEL% EQU 0 (
+        echo Running loot system test...
+        test_loot_system.exe
+    )
+) else if "%1"=="ps1" (
+    echo Building and running simple PS1 graphics test...
+    %CXX% %CXXFLAGS% -o simple_ps1_test.exe simple_ps1_basic_test.cpp simple_ps1_basic.cpp -LSFML\lib -lsfml-graphics -lsfml-window -lsfml-system -lopengl32 -lgdi32 -lwinmm -luser32 -lkernel32 -ladvapi32
+    if %ERRORLEVEL% EQU 0 (
+        echo Running simple PS1 graphics test...
+        simple_ps1_test.exe
+    )
+) else if "%1"=="clean" (
+    echo Cleaning build files...
+    del /Q *.o *.exe 2>nul
+    echo Clean complete!
+) else if "%1"=="" (
+    echo.
+    echo Usage: build.bat [run^|test^|ps1^|clean]
+    echo   run   - Build and run the main game
+    echo   test  - Build and run all tests
+    echo   ps1   - Build and run simple PS1 graphics test
+    echo   clean - Clean build files
+    echo.
+    echo Building main executable...
+    %CXX% %CXXFLAGS% -o %TARGET% %SOURCES% -LSFML\lib -lsfml-graphics -lsfml-window -lsfml-system -lopengl32 -lgdi32
+    if %ERRORLEVEL% EQU 0 (
+        echo Build successful! Created %TARGET%
+    ) else (
+        echo Build failed with error code %ERRORLEVEL%
+        exit /b %ERRORLEVEL%
+    )
+) else (
+    echo Unknown command: %1
+    echo Usage: build.bat [run^|test^|ps1^|clean]
+    exit /b 1
+)

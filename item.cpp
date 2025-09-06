@@ -155,6 +155,38 @@ Item Item::createArmor(const std::string& name, ArmorType armorType, ItemRarity 
     return armor;
 }
 
+Item Item::createStaff(const std::string& name, ItemRarity rarity) {
+    Item staff(name, "A magical staff for spellcasting", ItemType::WEAPON, rarity);
+    staff.setWeaponType(WeaponType::STAFF);
+    staff.setDamage(8 + static_cast<stattype>(rarity) * 4);
+    staff.setDurability(80);
+    staff.setMaxDurability(80);
+    staff.setMaxStack(1);
+    staff.setGoldValue(60 + static_cast<stattype>(rarity) * 30);
+    
+    // Set requirements based on rarity
+    staff.setRequiredLevel(1 + static_cast<leveltype>(rarity));
+    staff.setRequiredIntelligence(8 + static_cast<stattype>(rarity) * 2);
+    
+    return staff;
+}
+
+Item Item::createBow(const std::string& name, ItemRarity rarity) {
+    Item bow(name, "A ranged weapon for archery", ItemType::WEAPON, rarity);
+    bow.setWeaponType(WeaponType::BOW);
+    bow.setDamage(12 + static_cast<stattype>(rarity) * 5);
+    bow.setDurability(90);
+    bow.setMaxDurability(90);
+    bow.setMaxStack(1);
+    bow.setGoldValue(70 + static_cast<stattype>(rarity) * 35);
+    
+    // Set requirements based on rarity
+    bow.setRequiredLevel(1 + static_cast<leveltype>(rarity));
+    bow.setRequiredDexterity(10 + static_cast<stattype>(rarity) * 2);
+    
+    return bow;
+}
+
 Item Item::createPotion(const std::string& name, welltype healthRestore, welltype manaRestore) {
     Item potion(name, "A magical potion", ItemType::CONSUMABLE, ItemRarity::COMMON);
     potion.setHealthBonus(healthRestore);

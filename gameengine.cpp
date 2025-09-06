@@ -213,6 +213,10 @@ GameEngine::GameEngine(float targetFPS, bool fixedTimeStep)
     projectileManager = std::make_unique<ProjectileManager>();
     playerController = std::make_unique<PlayerController>();
     physicsSystem = std::make_unique<PhysicsSystem>();
+    lootSystem = std::make_unique<LootSystem>();
+    lootDropManager = std::make_unique<LootDropManager>();
+    dungeonManager = std::make_unique<DungeonManager>(lootSystem);
+    graphicsManager = std::make_unique<PS1GraphicsManager>();
     lastUpdateTime = std::chrono::steady_clock::now();
 }
 
@@ -226,6 +230,16 @@ void GameEngine::initialize() {
     
     // Initialize systems
     // TODO: Initialize player controller and physics system
+    
+    // Initialize graphics system
+    if (graphicsManager) {
+        if (graphicsManager->initialize()) {
+            graphicsManager->set_game_engine(this);
+            std::cout << "PS1 Graphics Manager initialized successfully" << std::endl;
+        } else {
+            std::cerr << "Failed to initialize PS1 Graphics Manager" << std::endl;
+        }
+    }
     
     isRunning = true;
     isPaused = false;
@@ -271,10 +285,23 @@ void GameEngine::update(float deltaTime) {
     // Update physics system
     if (physicsSystem) {
         physicsSystem->update(deltaTime);
+        updateEntityPhysics(deltaTime);
+        syncPhysicsBodies();
     }
     
     // Update projectiles
     projectileManager->updateProjectiles(deltaTime, characters, mobs);
+    
+    // Update loot drop manager
+    if (lootDropManager) {
+        lootDropManager->update(deltaTime);
+    }
+    
+    // Update graphics system
+    if (graphicsManager) {
+        graphicsManager->update_from_game_state();
+        graphicsManager->render_frame();
+    }
     
     // Update status effects for all entities
     for (auto& character : characters) {
@@ -305,10 +332,27 @@ void GameEngine::update(float deltaTime) {
 void GameEngine::shutdown() {
     isRunning = false;
     // TODO: Shutdown player controller and physics system
+    
+    // Shutdown graphics system
+    if (graphicsManager) {
+        graphicsManager->shutdown();
+    }
+    
     projectileManager->clearAllProjectiles();
     characters.clear();
     mobs.clear();
     std::cout << "Game Engine shutdown complete." << std::endl;
+}
+
+
+
+Mob& GameEngine::getMob(const std::string& description) {
+    for (auto& mob : mobs) {
+        if (mob.getDescription() == description) {
+            return mob;
+        }
+    }
+    throw std::runtime_error("Mob not found: " + description);
 }
 
 float GameEngine::getDeltaTime() {
@@ -325,14 +369,63 @@ float GameEngine::getDeltaTime() {
 
 void GameEngine::addCharacter(const Character& character) {
     characters.push_back(character);
-    // TODO: Register with physics system
-    std::cout << "Added character: " << character.getName() << std::endl;
+    
+    // Register with physics system
+    if (physicsSystem) {
+        auto physicsBody = physicsSystem->createBody(character.getPosition(), 70.0f); // 70kg human
+        physicsBody->bodyType = BodyType::DYNAMIC;
+        
+        // Initialize physics body with character position
+        physicsBody->position = character.getPosition();
+        physicsBody->velocity = Position(0, 0, 0); // Start with no velocity
+        
+        // Create appropriate collider based on character size
+        auto collider = std::make_shared<SphereCollider>(character.getPosition(), 0.5f); // 0.5m radius
+        physicsSystem->setBodyCollider(physicsBody, collider);
+        
+        // Store physics body reference in character (we'll need to add this to Character class)
+        // For now, we'll store it in a map
+        characterPhysicsBodies[character.getName()] = physicsBody;
+        
+        std::cout << "Added character: " << character.getName() << " with physics body at " << character.getPosition() << std::endl;
+    } else {
+        std::cout << "Added character: " << character.getName() << " (physics system not available)" << std::endl;
+    }
 }
 
 void GameEngine::addMob(const Mob& mob) {
     mobs.push_back(mob);
-    // TODO: Register with physics system
-    std::cout << "Added mob: " << mob.getDescription() << std::endl;
+    
+    // Register with physics system
+    if (physicsSystem) {
+        float mass = 100.0f; // Default mass for mobs
+        if (mob.getRace().getName() == "Dragon") {
+            mass = 500.0f; // Dragons are heavy
+        }
+        
+        auto physicsBody = physicsSystem->createBody(mob.getPosition(), mass);
+        physicsBody->bodyType = BodyType::DYNAMIC;
+        
+        // Initialize physics body with mob position
+        physicsBody->position = mob.getPosition();
+        physicsBody->velocity = Position(0, 0, 0); // Start with no velocity
+        
+        // Create appropriate collider
+        float radius = 1.0f; // Default radius
+        if (mob.getRace().getName() == "Dragon") {
+            radius = 2.0f; // Dragons are large
+        }
+        
+        auto collider = std::make_shared<SphereCollider>(mob.getPosition(), radius);
+        physicsSystem->setBodyCollider(physicsBody, collider);
+        
+        // Store physics body reference
+        mobPhysicsBodies[mob.getDescription()] = physicsBody;
+        
+        std::cout << "Added mob: " << mob.getDescription() << " with physics body at " << mob.getPosition() << std::endl;
+    } else {
+        std::cout << "Added mob: " << mob.getDescription() << " (physics system not available)" << std::endl;
+    }
 }
 
 Character* GameEngine::getCharacter(const std::string& name) {
@@ -374,5 +467,109 @@ void GameEngine::printProjectileInfo() const {
         std::cout << "Projectile " << i << ": " << p.sourceAbility->getName() 
                   << " at " << p.currentPos 
                   << " (alive: " << p.timeAlive << "s)" << std::endl;
+    }
+}
+
+// Physics integration methods implementation
+void GameEngine::syncPhysicsBodies() {
+    // Sync character positions with physics bodies
+    for (auto& character : characters) {
+        auto it = characterPhysicsBodies.find(character.getName());
+        if (it != characterPhysicsBodies.end()) {
+            auto& physicsBody = it->second;
+            if (physicsBody && physicsBody->isActive) {
+                // Update character position from physics body
+                Position newPos = physicsBody->position;
+                character.setPosition(newPos.getX(), newPos.getY(), newPos.getZ());
+                
+                // Debug output for gravity testing
+                static int debugCounter = 0;
+                if (debugCounter++ % 60 == 0) { // Every 60 frames
+                    std::cout << "Character " << character.getName() 
+                              << " physics pos: " << newPos 
+                              << " velocity: " << physicsBody->velocity << std::endl;
+                }
+            }
+        }
+    }
+    
+    // Sync mob positions with physics bodies
+    for (auto& mob : mobs) {
+        auto it = mobPhysicsBodies.find(mob.getDescription());
+        if (it != mobPhysicsBodies.end()) {
+            auto& physicsBody = it->second;
+            if (physicsBody && physicsBody->isActive) {
+                // Update mob position from physics body
+                Position newPos = physicsBody->position;
+                mob.setPosition(newPos.getX(), newPos.getY(), newPos.getZ());
+            }
+        }
+    }
+}
+
+void GameEngine::updateEntityPhysics(float deltaTime) {
+    // Update character physics bodies - only apply forces, don't overwrite positions
+    for (auto& character : characters) {
+        auto it = characterPhysicsBodies.find(character.getName());
+        if (it != characterPhysicsBodies.end()) {
+            auto& physicsBody = it->second;
+            if (physicsBody && physicsBody->isActive) {
+                // Apply gravity force (always active)
+                physicsBody->force.setZ(physicsBody->force.getZ() - 9.81f * physicsBody->mass);
+                
+                // Apply character movement as additional force if moving
+                if (character.getStats().getMovementSpeed() > 0) {
+                    // This will be enhanced later for proper movement physics
+                    // For now, just apply gravity
+                }
+            }
+        }
+    }
+    
+    // Update mob physics bodies - only apply forces, don't overwrite positions
+    for (auto& mob : mobs) {
+        auto it = mobPhysicsBodies.find(mob.getDescription());
+        if (it != mobPhysicsBodies.end()) {
+            auto& physicsBody = it->second;
+            if (physicsBody && physicsBody->isActive) {
+                // Apply gravity to mobs
+                physicsBody->force.setZ(physicsBody->force.getZ() - 9.81f * physicsBody->mass);
+            }
+        }
+    }
+}
+
+// Loot generation methods implementation
+void GameEngine::generateMobLoot(const Mob& mob, const Position& dropPosition) {
+    if (!lootSystem || !lootDropManager) return;
+    
+    // Generate loot based on mob type and level
+    auto loot = lootSystem->generateMobLoot(mob);
+    
+    if (!loot.empty()) {
+        // Add loot drop to the world
+        lootDropManager->addLootDrop(loot, dropPosition, 300.0f, false); // 5 minutes TTL
+        
+        std::cout << "Generated " << loot.size() << " loot items from " << mob.getDescription() << std::endl;
+        for (const auto& item : loot) {
+            std::cout << "  - " << item.getName() << " (" << item.getRarityString() << ")" << std::endl;
+        }
+    }
+}
+
+void GameEngine::generateDungeonLoot(const std::string& dungeonTier, const Position& dropPosition, leveltype playerLevel) {
+    if (!lootSystem || !lootDropManager) return;
+    
+    // Generate dungeon-specific loot
+    auto loot = lootSystem->generateDungeonLoot(dungeonTier, playerLevel);
+    
+    if (!loot.empty()) {
+        // Add loot drop to the world
+        lootDropManager->addLootDrop(loot, dropPosition, 600.0f, false); // 10 minutes TTL for dungeon loot
+        
+        std::cout << "Generated " << loot.size() << " dungeon loot items from " << dungeonTier << std::endl;
+        for (const auto& item : loot) {
+            std::cout << "  - " << item.getName() << " (" << item.getRarityString() << ")" << std::endl;
+        }
     }
 }
